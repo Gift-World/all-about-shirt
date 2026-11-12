@@ -27,7 +27,7 @@ type Tab = 'overview' | 'payments' | 'receipts' | 'reports' | 'stylist' | 'inven
 const TABS: { id: Tab; label: string; icon: typeof ChartBar }[] = [
   { id: 'overview', label: 'Overview', icon: ChartBar },
   { id: 'payments', label: 'Payments', icon: Wallet },
-  { id: 'receipts', label: 'Receipts', icon: Receipt },
+  { id: 'receipts', label: 'Receipts and invoices', icon: Receipt },
   { id: 'reports', label: 'Reports', icon: ChartBar },
   { id: 'stylist', label: 'AI stylist', icon: Sparkle },
   { id: 'inventory', label: 'Stock and IG', icon: Package },
@@ -35,8 +35,8 @@ const TABS: { id: Tab; label: string; icon: typeof ChartBar }[] = [
   { id: 'vips', label: 'VIP size book', icon: UsersThree },
 ]
 
-type Saved = { orders: AdminOrder[]; expenses: Expense[]; visits: Visit[]; swaps: Swap[]; drafts: Draft[]; soldOverride: Record<string, boolean> }
-const fresh = (): Saved => ({ orders: SAMPLE_ORDERS, expenses: SAMPLE_EXPENSES, visits: SAMPLE_VISITS, swaps: SAMPLE_SWAPS, drafts: [], soldOverride: {} })
+type Saved = { orders: AdminOrder[]; expenses: Expense[]; visits: Visit[]; swaps: Swap[]; drafts: Draft[]; soldOverride: Record<string, boolean>; till: string }
+const fresh = (): Saved => ({ orders: SAMPLE_ORDERS, expenses: SAMPLE_EXPENSES, visits: SAMPLE_VISITS, swaps: SAMPLE_SWAPS, drafts: [], soldOverride: {}, till: '' })
 function load(): Saved {
   try {
     const raw = localStorage.getItem(STORE_KEY)
@@ -570,13 +570,41 @@ function Payments({ orders, setOrder, notify, openReceipt }: Ctx) {
 }
 
 /* ═════════════ 03 Receipts ═════════════ */
-function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { selected?: string; onSelect: (id: string) => void }) {
+function Receipts({ orders, setOrder, notify, selected, onSelect, data, patch }: Ctx & { selected?: string; onSelect: (id: string) => void }) {
   const o = orders.find((x) => x.id === selected) ?? orders[0]
   const [addId, setAddId] = useState('')
+  const [kind, setKind] = useState<'receipt' | 'invoice'>('receipt')
+  const [dueDays, setDueDays] = useState(0)
+  const [extraName, setExtraName] = useState('')
+  const [extraPrice, setExtraPrice] = useState('')
   const rail = useMemo(() => products.filter((p) => !isSold(p)), [])
   if (!o) return null
   const sub = orderSubtotal(o)
   const total = orderTotal(o)
+  const invoice = kind === 'invoice'
+  const docNo = invoice ? o.id.replace('AAL-', 'INV-') : o.id
+  const issued = invoice ? new Date() : new Date(o.placed)
+  const due = new Date(issued.getTime() + dueDays * 86400000)
+  const tillText = data.till.trim() ? `M-Pesa Buy Goods, Till ${data.till.trim()}` : 'M-Pesa Buy Goods (add your till number)'
+  const invoiceMessage = `Habari ${o.customer.split(' ')[0]}, here is your invoice from All About Linen.\n\nInvoice ${docNo}\n${o.items.map((i) => `• ${i.name} (${i.size}) ${money(i.price * i.qty)}`).join('\n')}${o.deliveryFee ? `\n• Delivery ${money(o.deliveryFee)}` : ''}${o.discount ? `\n• Discount −${money(o.discount)}` : ''}\n\nAmount due ${money(total)}${dueDays ? ` by ${due.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })}` : ' on delivery'}\nPay with ${tillText}, account ${docNo}.\nOnce paid, we pack it the same day.`
+  const newOrder = () => {
+    const n = Math.max(...orders.map((x) => Number(x.id.replace(/\D/g, '')) || 0)) + 1
+    const fresh: AdminOrder = {
+      id: `AAL-${n}`, placed: Date.now(), customer: 'New customer', phone: '—', estate: '', landmark: '',
+      method: 'M-Pesa', ref: 'Waiting for code', status: 'Awaiting payment', rider: 'Packing', deliveryFee: 350, discount: 0, items: [], viaStylist: false,
+    }
+    patch({ orders: [fresh, ...data.orders] })
+    onSelect(fresh.id)
+    setKind('invoice')
+    notify(`New order ${fresh.id} started. Add pieces, then send the invoice.`)
+  }
+  const addExtra = () => {
+    const price = Number(extraPrice)
+    if (!extraName.trim() || !(price > 0)) return
+    setOrder(o.id, (x) => ({ ...x, items: [...x.items, { id: `x${Date.now()}`, name: extraName.trim(), size: '—', price, qty: 1 }] }))
+    setExtraName('')
+    setExtraPrice('')
+  }
   const add = () => {
     const p = byId(addId)
     if (!p) return
@@ -587,8 +615,18 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
   }
   return (
     <div className="grid items-start gap-6 lg:grid-cols-12 [&>*]:min-w-0">
-      <Card title="Receipt builder" sub="Pick an order, adjust it, then print or send." className="lg:col-span-5 print:hidden">
+      <Card
+        title={invoice ? 'Invoice builder' : 'Receipt builder'}
+        sub={invoice ? 'Bill a customer before they pay: WhatsApp orders, fittings, groom parties.' : 'Proof of payment for a paid order.'}
+        className="lg:col-span-5 print:hidden"
+        right={<button type="button" onClick={newOrder} className={`${btn} bg-ink text-bone`}><Plus size={14} /> New order</button>}
+      >
         <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-2 rounded-full border border-line bg-bone p-1" role="radiogroup" aria-label="Document type">
+            {(['receipt', 'invoice'] as const).map((k) => (
+              <button key={k} type="button" role="radio" aria-checked={kind === k} onClick={() => setKind(k)} className={`rounded-full py-1.5 text-xs font-semibold capitalize transition ${kind === k ? 'bg-ink text-bone' : 'text-mute'}`}>{k}</button>
+            ))}
+          </div>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-mute">Order</span>
             <select value={o.id} onChange={(e) => onSelect(e.target.value)} className={field}>
@@ -625,7 +663,7 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
               {o.items.map((it) => (
                 <li key={it.id} className="flex items-center justify-between gap-2 rounded-xl bg-paper px-3 py-2 text-xs">
                   <span className="min-w-0 truncate">{it.name} · {it.size}</span>
-                  <button type="button" aria-label={`Remove ${it.name}`} disabled={o.items.length <= 1} onClick={() => setOrder(o.id, (x) => ({ ...x, items: x.items.filter((i) => i.id !== it.id) }))} className="text-mute hover:text-clay disabled:opacity-30"><Trash size={14} /></button>
+                  <button type="button" aria-label={`Remove ${it.name}`} onClick={() => setOrder(o.id, (x) => ({ ...x, items: x.items.filter((i) => i.id !== it.id) }))} className="text-mute hover:text-clay disabled:opacity-30"><Trash size={14} /></button>
                 </li>
               ))}
             </ul>
@@ -640,7 +678,29 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
               </select>
               <button type="button" onClick={add} disabled={!addId} className={`${btn} shrink-0 bg-ink text-bone disabled:opacity-40`}><Plus size={14} /> Add</button>
             </div>
+            <div className="mt-2 flex gap-2">
+              <input value={extraName} onChange={(e) => setExtraName(e.target.value)} placeholder="Other line: alteration, steaming…" className={`${field} py-1.5 text-xs`} aria-label="Other line description" />
+              <input value={extraPrice} onChange={(e) => setExtraPrice(e.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="KES" className={`${field} w-20 shrink-0 py-1.5 text-xs`} aria-label="Other line amount" />
+              <button type="button" onClick={addExtra} className={`${btn} shrink-0 bg-oat`}><Plus size={14} /></button>
+            </div>
           </div>
+          {invoice && (
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-mute">M-Pesa till number</span>
+                <input value={data.till} onChange={(e) => patch({ till: e.target.value.replace(/[^\d ]/g, '') })} inputMode="numeric" placeholder="e.g. 123 456" className={field} />
+              </label>
+              <label className="block">
+                <span className="mb-1 block text-xs font-semibold text-mute">Payment due</span>
+                <select value={dueDays} onChange={(e) => setDueDays(Number(e.target.value))} className={field}>
+                  <option value={0}>On delivery</option>
+                  <option value={1}>In 1 day</option>
+                  <option value={3}>In 3 days</option>
+                  <option value={7}>In 7 days</option>
+                </select>
+              </label>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -649,7 +709,10 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
           <span className="px-2 text-xs text-mute">Preview</span>
           <div className="flex flex-wrap gap-2">
             <button type="button" className={`${btn} bg-ink text-bone`} onClick={() => window.print()}><Printer size={14} /> Print or save PDF</button>
-            <button type="button" className={`${btn} bg-olive text-bone`} onClick={() => { openWhatsApp(clientMessage(o)); notify(`Receipt ready to send to ${o.customer}`) }}><WhatsappLogo size={14} weight="fill" /> Send to client</button>
+            <button type="button" disabled={!o.items.length} className={`${btn} bg-olive text-bone disabled:opacity-40`} onClick={() => { openWhatsApp(invoice ? invoiceMessage : clientMessage(o)); notify(`${invoice ? 'Invoice' : 'Receipt'} ready to send to ${o.customer}`) }}><WhatsappLogo size={14} weight="fill" /> Send {invoice ? 'invoice' : 'receipt'}</button>
+            {invoice && o.status !== 'Paid' && (
+              <button type="button" className={`${btn} border border-line`} onClick={() => { setOrder(o.id, (x) => ({ ...x, status: 'Paid' })); setKind('receipt'); notify(`${o.id} paid. Showing the receipt.`) }}><Check size={14} /> Mark paid</button>
+            )}
             <button type="button" className={`${btn} bg-oat`} onClick={() => { openWhatsApp(riderMessage(o)); notify('Rider brief ready') }}><Moped size={14} /> Brief rider</button>
           </div>
         </div>
@@ -662,10 +725,11 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
               <p className="mt-3 text-xs text-mute">{store.shop}, {store.city}<br />{store.phoneDisplay} · allaboutlinen.co.ke</p>
             </div>
             <div className="text-right">
-              <p className="text-[11px] font-semibold tracking-wider text-mute uppercase">Sales receipt</p>
-              <p className="mt-1 font-mono text-lg font-semibold">{o.id}</p>
-              <p className="text-xs text-mute">{new Date(o.placed).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</p>
-              <span className="mt-2 inline-block"><StatusPill s={o.status} /></span>
+              <p className="text-[11px] font-semibold tracking-wider text-mute uppercase">{invoice ? 'Invoice' : 'Sales receipt'}</p>
+              <p className="mt-1 font-mono text-lg font-semibold">{docNo}</p>
+              <p className="text-xs text-mute">{invoice ? 'Issued' : ''} {issued.toLocaleString('en-KE', { dateStyle: 'medium', ...(invoice ? {} : { timeStyle: 'short' }) })}</p>
+              {invoice && <p className="text-xs font-semibold">Due {dueDays ? due.toLocaleDateString('en-KE', { dateStyle: 'medium' }) : 'on delivery'}</p>}
+              <span className="mt-2 inline-block"><StatusPill s={invoice && o.status !== 'Paid' ? 'Awaiting payment' : o.status} /></span>
             </div>
           </div>
           <div className="grid gap-4 border-b border-line py-5 text-sm sm:grid-cols-2">
@@ -676,9 +740,19 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
               <p className="text-xs text-mute">{o.landmark}{o.estate && !o.landmark.includes(o.estate) ? `, ${o.estate}` : ''}</p>
             </div>
             <div className="sm:text-right">
-              <p className="text-[11px] font-semibold tracking-wider text-mute uppercase">Payment</p>
-              <p className="mt-1 font-semibold">{o.method}</p>
-              <p className="font-mono text-xs">{o.ref}</p>
+              <p className="text-[11px] font-semibold tracking-wider text-mute uppercase">{invoice ? 'How to pay' : 'Payment'}</p>
+              {invoice ? (
+                <>
+                  <p className="mt-1 font-semibold">{tillText}</p>
+                  <p className="text-xs">Account: <span className="font-mono">{docNo}</span></p>
+                  <p className="text-xs text-mute">Or card, or cash at Shop 305</p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 font-semibold">{o.method}</p>
+                  <p className="font-mono text-xs">{o.ref}</p>
+                </>
+              )}
             </div>
           </div>
           <table className="mt-4 w-full text-sm">
@@ -690,9 +764,10 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
               </tr>
             </thead>
             <tbody className="divide-y divide-line/60">
+              {!o.items.length && <tr><td colSpan={3} className="py-6 text-center text-xs text-mute">Add pieces from the builder.</td></tr>}
               {o.items.map((it) => (
                 <tr key={it.id}>
-                  <td className="py-2.5">{it.name}<span className="block text-[11px] text-mute">One of one · ex UK, Grade A</span></td>
+                  <td className="py-2.5">{it.name}{byId(it.id) && <span className="block text-[11px] text-mute">One of one · ex UK, Grade A</span>}</td>
                   <td className="py-2.5 text-center font-semibold">{it.size}</td>
                   <td className="py-2.5 text-right tabular-nums">{money(it.price * it.qty)}</td>
                 </tr>
@@ -704,13 +779,13 @@ function Receipts({ orders, setOrder, notify, selected, onSelect }: Ctx & { sele
             <Row k="Delivery" v={o.deliveryFee ? money(o.deliveryFee) : 'Free'} />
             {o.discount > 0 && <Row k="Discount" v={`− ${money(o.discount)}`} />}
             <div className="flex items-baseline justify-between border-t border-line pt-2">
-              <dt className="font-semibold">{o.status === 'Paid' ? 'Total paid' : 'Total due'}</dt>
+              <dt className="font-semibold">{o.status === 'Paid' && !invoice ? 'Total paid' : 'Amount due'}</dt>
               <dd className="display text-3xl">{money(total)}</dd>
             </div>
           </dl>
           <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-t border-line pt-4 text-[11px] text-mute">
             <p className="max-w-sm">Exchanges within 7 days on unworn pieces at Shop 305. Track this order at {SITE.replace('https://', '')}/track/{o.id}</p>
-            <p className="max-w-[220px] sm:text-right">This is a sales receipt, not a tax invoice. KRA eTIMS invoices can be issued once the shop’s eTIMS account is connected.</p>
+            <p className="max-w-[240px] sm:text-right">{invoice ? 'Pieces are held for you until the due date. Every piece is one of one.' : 'This is a sales receipt.'} Not a KRA tax invoice: eTIMS invoices can be issued once the shop’s eTIMS account is connected.</p>
           </div>
         </article>
       </div>

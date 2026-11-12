@@ -80,7 +80,7 @@ function Hero() {
 
   return (
     <section ref={ref} className="relative -mt-16 h-[calc(100svh-32px)] min-h-[620px] overflow-hidden [@media(max-height:520px)]:min-h-[420px]" aria-label="Welcome">
-      <motion.div style={{ y: yText, opacity: fade }} className="pointer-events-none absolute inset-0 flex flex-col justify-start px-4 pt-[16vh] md:justify-center md:px-8 md:pt-0" aria-hidden>
+      <motion.div style={{ y: yText, opacity: fade }} className="pointer-events-none absolute inset-0 flex flex-col justify-start px-4 pt-[16vh] max-md:z-[5] max-md:text-white max-md:mix-blend-difference md:justify-center md:px-8 md:pt-0" aria-hidden>
         <motion.p
           initial={{ y: 120, opacity: 0, rotate: 2 }}
           animate={{ y: 0, opacity: 1, rotate: 0 }}
@@ -93,7 +93,7 @@ function Hero() {
           initial={{ y: 120, opacity: 0, rotate: -2 }}
           animate={{ y: 0, opacity: 1, rotate: 0 }}
           transition={{ duration: 1.5, ease, delay: 0.3 }}
-          className="display self-end text-[26vw] leading-[0.8] italic text-clay md:text-[18.5vw]"
+          className="display self-end text-[26vw] leading-[0.8] italic md:text-[18.5vw] md:text-clay"
         >
           easy.
         </motion.p>
@@ -105,7 +105,7 @@ function Hero() {
         initial={{ opacity: 0, y: -60 }}
         animate={{ opacity: ready ? 1 : 0, y: ready ? 0 : -60 }}
         transition={{ duration: 1.6, ease }}
-        className="absolute inset-x-0 top-16 bottom-44 md:top-14 md:bottom-10 md:left-[30%] md:right-[10%] [@media(max-height:520px)]:top-14 [@media(max-height:520px)]:bottom-2 [@media(max-height:520px)]:left-[48%] [@media(max-height:520px)]:right-0"
+        className="absolute inset-x-0 top-16 bottom-[18rem] md:top-14 md:bottom-10 md:left-[30%] md:right-[10%] [@media(max-height:520px)]:top-14 [@media(max-height:520px)]:bottom-2 [@media(max-height:520px)]:left-[48%] [@media(max-height:520px)]:right-0"
         data-cursor="Touch"
       >
         <Suspense fallback={null}>
@@ -118,7 +118,8 @@ function Hero() {
         </div>
       )}
 
-      <div className="absolute inset-x-0 bottom-0 z-10 px-4 pb-6 md:px-8 md:pb-10">
+      {/* on phones the text sits on a soft fade so the banner can never cover it */}
+      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-bone via-bone/95 to-transparent px-4 pt-10 pb-6 md:bg-none md:px-8 md:pt-0 md:pb-10">
         <div className="mx-auto flex max-w-[1440px] flex-col gap-6 md:flex-row md:items-end md:justify-between">
           <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease, delay: 0.8 }} className="max-w-sm">
             <h1 className="text-[15px] leading-snug font-semibold">Ex UK linen for men, women and little ones.</h1>

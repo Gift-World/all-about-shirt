@@ -106,7 +106,7 @@ export const branches: Record<
     tint: '#A7C0D3',
     accent: '#2B3850',
     cover: U.kBeachPair,
-    campaign: U.kFlowerGirl,
+    campaign: U.kBoySmile, // Kids Bayke stocks boys' linen
   },
 }
 
