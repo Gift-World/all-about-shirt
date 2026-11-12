@@ -679,8 +679,8 @@ function Receipts({ orders, setOrder, notify, selected, onSelect, data, patch }:
               <button type="button" onClick={add} disabled={!addId} className={`${btn} shrink-0 bg-ink text-bone disabled:opacity-40`}><Plus size={14} /> Add</button>
             </div>
             <div className="mt-2 flex gap-2">
-              <input value={extraName} onChange={(e) => setExtraName(e.target.value)} placeholder="Other line: alteration, steaming…" className={`${field} py-1.5 text-xs`} aria-label="Other line description" />
-              <input value={extraPrice} onChange={(e) => setExtraPrice(e.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="KES" className={`${field} w-20 shrink-0 py-1.5 text-xs`} aria-label="Other line amount" />
+              <input value={extraName} onChange={(e) => setExtraName(e.target.value)} placeholder="Other line: alteration, steaming…" className={`${field} min-w-0 py-1.5 text-xs`} aria-label="Other line description" />
+              <input value={extraPrice} onChange={(e) => setExtraPrice(e.target.value.replace(/\D/g, ''))} inputMode="numeric" placeholder="KES" className={`${field.replace('w-full ', '')} w-20 shrink-0 py-1.5 text-xs`} aria-label="Other line amount" />
               <button type="button" onClick={addExtra} className={`${btn} shrink-0 bg-oat`}><Plus size={14} /></button>
             </div>
           </div>
@@ -707,7 +707,7 @@ function Receipts({ orders, setOrder, notify, selected, onSelect, data, patch }:
       <div className="space-y-3 lg:col-span-7">
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-[20px] bg-paper p-3 print:hidden">
           <span className="px-2 text-xs text-mute">Preview</span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex min-w-0 flex-1 flex-wrap justify-end gap-2">
             <button type="button" className={`${btn} bg-ink text-bone`} onClick={() => window.print()}><Printer size={14} /> Print or save PDF</button>
             <button type="button" disabled={!o.items.length} className={`${btn} bg-olive text-bone disabled:opacity-40`} onClick={() => { openWhatsApp(invoice ? invoiceMessage : clientMessage(o)); notify(`${invoice ? 'Invoice' : 'Receipt'} ready to send to ${o.customer}`) }}><WhatsappLogo size={14} weight="fill" /> Send {invoice ? 'invoice' : 'receipt'}</button>
             {invoice && o.status !== 'Paid' && (
