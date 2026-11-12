@@ -1,0 +1,77 @@
+@import '@fontsource-variable/manrope';
+@import '@fontsource/instrument-serif/400.css';
+@import '@fontsource/instrument-serif/400-italic.css';
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Manrope Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+
+  --color-bone: #efe9df;
+  --color-paper: #f7f3ec;
+  --color-oat: #e2d6bf;
+  --color-sand: #cdb68e;
+  --color-ink: #14130f;
+  --color-ink-2: #2b2924;
+  --color-mute: #6f685d;
+  --color-line: #d9cfbf;
+  --color-clay: #b5623d;
+  --color-olive: #6b714e;
+  --color-sky: #a7c0d3;
+  --color-blush: #e0b5a3;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-base: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-marquee: marquee 38s linear infinite;
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+}
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  body {
+    @apply bg-bone text-ink font-sans antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+  }
+  h1, h2, h3 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  ::selection { @apply bg-ink text-bone; }
+  :focus-visible { outline: 2px solid var(--color-ink); outline-offset: 3px; border-radius: 6px; }
+}
+
+@utility display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 0.92;
+}
+
+@utility eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.22em];
+}
+
+/* subtle film grain over everything for a tactile, printed feel */
+.grain::after {
+  content: '';
+  position: fixed;
+  inset: -50%;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

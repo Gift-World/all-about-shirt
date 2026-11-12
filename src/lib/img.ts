@@ -1,0 +1,103 @@
+// Editorial photos are Unsplash IDs (free Unsplash licence). Product photos are local paths from the shop's own Instagram.
+export const U = {
+  // men
+  menBlueLawn: '1792007195189-680db6f5b06a',
+  menWhitePlants: '1627686011747-74adda3d2343',
+  menStoneShirt: '1591357037205-166318b51afd',
+  menBeach: '1791298077194-d22598130a72',
+  menCreamSky: '1788345024839-e45c22b81463',
+  menBeigeSuit: '1789141744933-b378dbead9e5',
+  menBeigeSuitStool: '1794109771563-c31e35c34ab8',
+  menLightSuitWall: '1770582071402-0f65a47c17b9',
+  menWhitePants: '1626557981101-aae6f84aa6ff',
+  menWhiteSet: '1628375385879-b476587214ef',
+  menKanzuSand: '1731595758668-3d2fabfe1fdb',
+  menKanzuBlue: '1731595758947-fbcf0bc64b1e',
+  menDoorway: '1739730976324-2205cb312e37',
+  menCoast: '1782178392325-2d033dea7b3a',
+  shirtWhiteLine: '1713881587420-113c1c43e28a',
+  shirtSkyLine: '1713881842156-3d9ef36418cc',
+  shirtBlackLine: '1713881917939-b558c8f50ccd',
+  shirtWhiteSsLine: '1713881676551-b16f22ce4719',
+  shirtNavyWall: '1740711152088-88a009e877bb',
+  shirtWhiteHanger: '1604506847073-4a8e18e07d92',
+  pantsWhiteLine: '1687226426353-498d40ec6fbf',
+  pantsSand: '1715233749622-3216fe49e682',
+  menGreyPants: '1785338485462-508fd65d16fe',
+  menArmsFolded: '1744535814652-9cd3a3dea348',
+  menGroomBeach: '1766104798164-bddb763ffbdf',
+  // women
+  wLinenMidi: '1747396206869-75ea57b325ce',
+  wStrawHat: '1764298493197-a1c1cce57800',
+  wSageSlip: '1789110519607-6176d668fb72',
+  wWhiteRope: '1789110520302-3df8ce0410f0',
+  wTerracotta: '1789110853833-bc1a883da2d6',
+  wBeachBeige: '1789145508216-ade0a26d518a',
+  wOliveDress: '1789110853844-d1a86b2c5b9b',
+  wMustardPant: '1789110520143-9f54f069b43f',
+  wBrownPant: '1789110520148-bb52ba37759b',
+  wWideLeg: '1789110853687-71692f0e86be',
+  wSagePant: '1789110520410-4fce7246f844',
+  wRedPant: '1789110854331-6d3cabfef781',
+  wShirtGolden: '1793263145472-eab42964c52c',
+  wShirtStone: '1793203727137-27118c650b25',
+  wShirtShorts: '1783113298894-eeb3b71315d9',
+  wWhiteDress: '1558036496-420dadc075cf',
+  wWhiteSitting: '1617551307578-7f5160d6615e',
+  wRailing: '1730141100734-90e06e5966dd',
+  wBlueBuilding: '1553076699-6b6250481bd1',
+  wWhiteJacket: '1684262855347-56505dfb3037',
+  wBlazerPin: '1628606919484-28c3b32543b3',
+  wTanSkirt: '1698222850780-f6bac93979ba',
+  wGreySkirt: '1639818023520-ab4c21c5892b',
+  wCami: '1578747522731-9e5a179b02f7',
+  wStrawWhite: '1606824003590-e2377df0b6f2',
+  wPrint: '1628144029346-8a98676311b6',
+  wYellowWall: '1696962678565-bee84e6b9cb6',
+  // kids
+  kBeachPair: '1769566174402-e63f29e213ef',
+  kFlowerGirl: '1620774760711-caa4c94d683a',
+  kRunning: '1599254461321-f61a8c05e291',
+  kBoySmile: '1727798450911-4f99a48cd03b',
+  kBaby: '1620751876866-b94ea90d5f09',
+  kCap: '1707745735759-faa78753efb2',
+  kBeige: '1758782213532-bbb5fd89885e',
+  kHands: '1634188157846-c6e3bdf99420',
+  kBeachWalk: '1642741743536-7f4daeadc8b0',
+  kBlueDress: '1571240571053-3ddc83cdb289',
+  kBoyWhite: '1611949341310-61649ecb5144',
+  kFlatlay: '1777397660834-67c6d0eabe15',
+  kPole: '1727926754165-c471a2bcb298',
+  kPrint: '1761168433666-b5d7396c835e',
+  kPink: '1697906099479-20639005777e',
+  // editorial / fabric / space
+  fabBeige: '1528458909336-e7a0adfed0a5',
+  fabWhite: '1615799998603-7c6270a45196',
+  fabSwirl: '1757382603782-839864de55d7',
+  fabSage: '1764437835866-73c7d0961c46',
+  fabPeach: '1764437835714-322ab28f0770',
+  fabSky: '1764437835979-03002314f2b7',
+  boutique: '1441984904996-e0b6ba687e04',
+  rackNeutral: '1603400521630-9f2de124b33b',
+  rackBoutique: '1767968037382-8eb9c564339f',
+  hangers: '1490481651871-ab68de25d43d',
+  foldedStack: '1792566370102-98fd72763f9e',
+  sunDrying: '1759310348102-278042e5e437',
+  palm: '1506953823976-52e1fdc0149a',
+  beachHuts: '1706012955757-6c2048c32668',
+  rackWindow: '1501127122-f385ca6ddd9d',
+  curtain: '1578500467296-441a11d5d55a',
+  sheer: '1688732324812-9c67f0a35b4b',
+} as const
+
+export type PhotoId = (typeof U)[keyof typeof U]
+
+/** Local shop photos are paths like "/ig/men/abc.jpg"; everything else is an Unsplash id. */
+export const isLocal = (id: string) => id.startsWith('/')
+const localSized = (id: string, w: number) => (w <= 520 ? id.replace(/\.jpg$/, '-sm.jpg') : id)
+
+export const photo = (id: string, w = 800, h?: number) =>
+  isLocal(id) ? localSized(id, w) : `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}${h ? `&h=${h}` : ''}&q=78`
+
+export const srcSet = (id: string, widths = [400, 700, 1000, 1400]) =>
+  isLocal(id) ? `${localSized(id, 400)} 520w, ${id} 1100w` : widths.map((w) => `${photo(id, w)} ${w}w`).join(', ')
