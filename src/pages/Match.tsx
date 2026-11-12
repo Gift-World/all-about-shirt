@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { animate, AnimatePresence, motion, useMotionValue, useTransform, type PanInfo } from 'motion/react'
 import { ArrowCounterClockwise, ArrowsLeftRight, Bag, Heart, HeartStraight, Sparkle, Users, X } from '@phosphor-icons/react'
 import { branches, kes, products, type Branch, type Product } from '../data/catalog'
-import { isSold, lastOnes, stock, totalLeft } from '../data/extras'
+import { isSold, stock } from '../data/extras'
 import { ease, Photo } from '../components/ui'
 import { useShop } from '../store/shop'
 
@@ -94,23 +94,44 @@ function Solo({ house }: { house: Branch | 'all' }) {
   const deck = useMemo(() => shuffle(products.filter((p) => !isSold(p) && (house === 'all' || p.branch === house)), house.length).slice(0, 14), [house])
   const [i, setI] = useState(0)
   const [history, setHistory] = useState<{ p: Product; v: Verdict }[]>([])
-  const [match, setMatch] = useState<Product | null>(null)
+  const [match, setMatch] = useState<{ p: Product; why: string } | null>(null)
   const [sizeFor, setSizeFor] = useState<Product | null>(null)
-  const wishlist = useShop((s) => s.wishlist)
-  const toggleWish = useShop((s) => s.toggleWish)
+  const [quiet, setQuiet] = useState(() => {
+    try {
+      return localStorage.getItem('aal-match-quiet') === '1'
+    } catch {
+      return false
+    }
+  })
+  const lastMatchAt = useRef(-99)
 
   const decide = useCallback(
     (v: Verdict) => {
       const p = deck[i]
       if (!p) return
+      const loves = history.filter((h) => h.v === 'love').map((h) => h.p)
       setHistory((h) => [...h, { p, v }])
       setI((n) => n + 1)
-      if (v === 'love' && !wishlist.includes(p.id)) toggleWish(p.id)
+      if (v === 'love') {
+        // save quietly: no toast on every swipe
+        const { wishlist } = useShop.getState()
+        if (!wishlist.includes(p.id)) useShop.setState({ wishlist: [...wishlist, p.id] })
+        // a match is earned: this piece fits the taste you have shown, and it is not too soon since the last one
+        const colour = p.colours[0].name
+        const sameColour = loves.filter((x) => x.colours[0].name === colour).length
+        const sameCut = loves.filter((x) => x.category === p.category && x.branch === p.branch).length
+        const earned = loves.length >= 2 && (sameColour >= 2 || (sameColour >= 1 && sameCut >= 1))
+        if (earned && !quiet && i - lastMatchAt.current >= 5) {
+          lastMatchAt.current = i
+          const nth = ['', '', 'second', 'third', 'fourth', 'fifth'][sameColour + 1] ?? `${sameColour + 1}th`
+          setMatch({ p, why: sameColour >= 2 ? `Your ${nth} ${colour.toLowerCase()} pick. You clearly have a colour.` : `Your colour and your cut, in one piece.` })
+        }
+      }
       if (v === 'bag') setSizeFor(p)
-      if (v === 'love' && (totalLeft(p) <= 4 || lastOnes(p).length)) setMatch(p)
     },
-    [deck, i, wishlist, toggleWish],
+    [deck, i, history, quiet],
   )
+  const loved = history.filter((h) => h.v === 'love').length
   const undo = () => {
     if (!history.length) return
     setHistory((h) => h.slice(0, -1))
@@ -123,7 +144,30 @@ function Solo({ house }: { house: Branch | 'all' }) {
     <div className="flex flex-col items-center">
       <Deck cards={deck.slice(i, i + 3)} onDecide={decide} progress={`${i + 1} / ${deck.length}`} />
       <Controls onDecide={decide} onUndo={undo} canUndo={history.length > 0} />
-      <AnimatePresence>{match && <MatchModal p={match} onClose={() => setMatch(null)} onBag={() => { setSizeFor(match); setMatch(null) }} />}</AnimatePresence>
+      <AnimatePresence mode="popLayout">
+        <motion.p key={loved} initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mt-4 inline-flex items-center gap-1.5 text-xs text-mute">
+          <Heart size={12} weight="fill" className="text-clay" /> {loved ? `${loved} saved to your wishlist` : 'Loves are saved to your wishlist'}
+        </motion.p>
+      </AnimatePresence>
+      <AnimatePresence>
+        {match && (
+          <MatchModal
+            p={match.p}
+            why={match.why}
+            onClose={() => setMatch(null)}
+            onBag={() => { setSizeFor(match.p); setMatch(null) }}
+            onQuiet={() => {
+              setQuiet(true)
+              try {
+                localStorage.setItem('aal-match-quiet', '1')
+              } catch {
+                /* ignore */
+              }
+              setMatch(null)
+            }}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>{sizeFor && <SizeSheet p={sizeFor} onClose={() => setSizeFor(null)} />}</AnimatePresence>
     </div>
   )
@@ -167,8 +211,6 @@ function SwipeCard({ p, depth, onDecide, allowBag }: { p: Product; depth: number
   const [photo, setPhoto] = useState(0)
   const [leaving, setLeaving] = useState<Verdict | null>(null)
   const top = depth === 0
-  const left = totalLeft(p)
-  const ones = lastOnes(p)
 
   const fly = (v: Verdict) => {
     setLeaving(v)
@@ -202,7 +244,7 @@ function SwipeCard({ p, depth, onDecide, allowBag }: { p: Product; depth: number
       data-cursor={top ? 'Drag' : undefined}
     >
       <div className="relative h-full w-full overflow-hidden rounded-[28px] bg-oat shadow-[0_30px_60px_-20px_rgba(20,19,15,0.45)]">
-        <Photo id={p.images[photo]} alt={`${p.name}, ${photo === 1 ? 'on body' : photo === 0 ? 'product' : 'fabric'} photo`} sizes="380px" widths={[500, 800]} priority={top} className="pointer-events-none h-full w-full" />
+        <Photo id={p.images[photo]} alt={`${p.name}, ${photo === 1 ? 'detail' : photo === 0 ? 'product' : 'fabric'} photo`} sizes="380px" widths={[500, 800]} priority={top} className="pointer-events-none h-full w-full" />
         {/* photo bars, tap left or right half to flip */}
         <div className="absolute inset-x-3 top-3 flex gap-1.5">
           {p.images.map((_, k) => (
@@ -229,13 +271,7 @@ function SwipeCard({ p, depth, onDecide, allowBag }: { p: Product; depth: number
             <span className="text-bone/80">{p.colours.map((c) => c.name).slice(0, 2).join(', ')}</span>
           </div>
           <div className="mt-3 flex flex-wrap gap-1.5">
-            {left <= 3 ? (
-              <Chip hot>Last {left} {left === 1 ? 'piece' : 'pieces'}</Chip>
-            ) : ones.length ? (
-              <Chip hot>1 left in {ones[0]}</Chip>
-            ) : (
-              <Chip>{left} in stock</Chip>
-            )}
+            <Chip hot>One of one · {p.sizes[0]}</Chip>
             <Chip>{p.fit}</Chip>
           </div>
         </div>
@@ -277,8 +313,7 @@ function Controls({ onDecide, onUndo, canUndo, allowBag = true }: { onDecide: (v
   )
 }
 
-function MatchModal({ p, onClose, onBag }: { p: Product; onClose: () => void; onBag: () => void }) {
-  const ones = lastOnes(p)
+function MatchModal({ p, why, onClose, onBag, onQuiet }: { p: Product; why: string; onClose: () => void; onBag: () => void; onQuiet: () => void }) {
   return (
     <motion.div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-ink/90 px-6 text-center text-bone backdrop-blur" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="dialog" aria-modal aria-label="It's a match">
       {Array.from({ length: 14 }).map((_, k) => (
@@ -295,7 +330,7 @@ function MatchModal({ p, onClose, onBag }: { p: Product; onClose: () => void; on
       <motion.p initial={{ scale: 0.6, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: 'spring', stiffness: 260, damping: 14 }} className="display text-7xl italic md:text-8xl">
         It’s a match
       </motion.p>
-      <p className="mt-3 max-w-xs text-sm text-bone/75">You love it, and it is almost gone. {ones.length ? `There is 1 left in ${ones.join(', ')}.` : `Only ${totalLeft(p)} pieces left.`}</p>
+      <p className="mt-3 max-w-xs text-sm text-bone/75">{why} It is one of one, in {p.sizes[0]}.</p>
       <div className="mt-8 flex items-center">
         <motion.span initial={{ x: -60, rotate: -14 }} animate={{ x: 10, rotate: -8 }} transition={{ duration: 0.8, ease }} className="display grid size-28 place-items-center rounded-full bg-sand text-3xl text-ink ring-4 ring-ink">
           You
@@ -308,6 +343,7 @@ function MatchModal({ p, onClose, onBag }: { p: Product; onClose: () => void; on
       <div className="mt-8 flex w-full max-w-xs flex-col gap-2">
         <button type="button" onClick={onBag} className="rounded-full bg-bone py-4 text-sm font-semibold text-ink">Put it in my bag</button>
         <button type="button" onClick={onClose} className="rounded-full border border-white/25 py-4 text-sm font-semibold">Keep swiping</button>
+        <button type="button" onClick={onQuiet} className="mt-1 py-2 text-xs text-bone/60 underline underline-offset-4 hover:text-bone">Don’t show matches, just let me swipe</button>
       </div>
     </motion.div>
   )

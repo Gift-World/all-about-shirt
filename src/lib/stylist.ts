@@ -92,7 +92,7 @@ const pickBest = (list: Product[], cats: string[] | undefined, n: number) => {
   return [...list].sort((a, b) => rank(a) - rank(b)).slice(0, n)
 }
 
-export function think(raw: string, ctx: { lastBranches?: Branch[] }): Reply & { branches?: Branch[] } {
+export function think(raw: string, ctx: { lastBranches?: Branch[]; exclude?: Set<string> }): Reply & { branches?: Branch[] } {
   const t = ` ${raw.toLowerCase()} `
 
   if (has(t, 'hello', 'hi ', 'hey', 'habari', 'jambo', 'niaje') && t.trim().length < 18) {
@@ -143,7 +143,7 @@ export function think(raw: string, ctx: { lastBranches?: Branch[] }): Reply & { 
   const size = sizeIn(t)
   const girl = who.includes('kids') && word(t, 'girl|girls|daughter|flower girl')
   const pool = (b: Branch, cats?: string[], strict = false) => {
-    let list = products.filter((p) => p.branch === b && available(p))
+    let list = products.filter((p) => p.branch === b && available(p) && !ctx.exclude?.has(p.id))
     if (cats) {
       const c = list.filter((p) => cats.includes(p.category))
       if (c.length || strict) list = c
@@ -204,3 +204,78 @@ export const STARTERS = [
   'Office look in size L, I like navy',
   'What size am I? 178 cm, 80 kg',
 ]
+
+/* ───────────── Feed: one look per frame, like a For You page ───────────── */
+export type Frame = { id: string; prompt: string; caption: string; products: Product[]; total: number; actions: Reply['actions'] }
+
+/** The other half of an outfit: a top for a bottom, a bottom for a top, same house, colours that work together. */
+function partnerFor(main: Product, exclude: Set<string>, size?: string) {
+  const wantBottom = TOPS.includes(main.category)
+  const pool = products.filter(
+    (p) => p.branch === main.branch && available(p) && !exclude.has(p.id) && p.id !== main.id && (wantBottom ? BOTTOMS : TOPS).includes(p.category),
+  )
+  if (!pool.length) return undefined
+  const neutral = (p: Product) => NEUTRAL.includes(p.colours[0].name)
+  const score = (p: Product) =>
+    (fitsSize(p, size) ? 0 : 4) + // in the customer's size first
+    (neutral(main) === neutral(p) ? (p.colours[0].name === main.colours[0].name ? 3 : 1) : 0) + // one quiet piece, one with colour
+    p.addedDaysAgo / 30
+  return [...pool].sort((a, b) => score(a) - score(b))[0]
+}
+
+/** Several different looks for one request. Each frame is a whole outfit and never repeats a piece. */
+export function feed(prompt: string, n = 6): Frame[] {
+  const exclude = new Set<string>()
+  const out: Frame[] = []
+  const t = ` ${prompt.toLowerCase()} `
+  const size = sizeIn(t)
+  const LEADS = ['Another way to wear it', 'Or try this', 'Same mood, different pieces', 'One more for you', 'Last idea']
+  for (let k = 0; k < n; k++) {
+    const r = think(prompt, { exclude })
+    const c = r.products ?? []
+    if (!c.length) break
+    let look: Product[]
+    if (new Set(c.map((p) => p.branch)).size > 1) {
+      look = c.slice(0, 3) // one piece each for a couple or a family
+    } else {
+      const [a, b] = c
+      const pair = b && TOPS.includes(a.category) !== TOPS.includes(b.category)
+      const partner = pair ? b : partnerFor(a, new Set([...exclude, a.id]), size)
+      look = partner ? (TOPS.includes(a.category) ? [a, partner] : [partner, a]) : [a]
+    }
+    look.forEach((p) => exclude.add(p.id))
+    const total = look.reduce((x, p) => x + p.price, 0)
+    const lead = k === 0 ? (r.text.split(/(?<=\.)\s/)[0] ?? '') : `${LEADS[Math.min(LEADS.length - 1, k - 1)]}:`
+    const body =
+      new Set(look.map((p) => p.branch)).size > 1
+        ? `${look.map((p) => `the ${p.name.toLowerCase()} for ${p.branch === 'men' ? 'him' : p.branch === 'women' ? 'her' : 'the little one'}`).join(', ')}. ${kes(total)} together.`
+        : look.length > 1
+          ? `the ${look[0].name.toLowerCase()} with the ${look[1].name.toLowerCase()}, ${kes(total)} for the full look.`
+          : `the ${look[0].name.toLowerCase()}, ${kes(total)}.`
+    const caption = `${lead} ${k === 0 ? body.charAt(0).toUpperCase() + body.slice(1) : body}${k === 0 && size ? ` Everything fits ${size}.` : ''}`.replace(/\s+/g, ' ').trim()
+    out.push({ id: `${prompt}-${k}`, prompt, caption, products: look, total, actions: r.actions })
+  }
+  return out
+}
+
+/** The opening feed before the customer types anything. */
+export const FOR_YOU = [
+  'Beach wedding in Diani for my husband, under 3k',
+  'Wide leg pants for her, light colours',
+  'Office look for him in navy',
+  'Birthday party for my son, 6 years old',
+  'Date night outfit for him in black',
+  'Something bright for her for the weekend',
+  'Smart shirts for my boy for church, age 10',
+]
+export function forYou(): Frame[] {
+  const seen = new Set<string>()
+  const out: Frame[] = []
+  for (const q of FOR_YOU) {
+    const f = feed(q, 2).find((x) => x.products.every((p) => !seen.has(p.id)))
+    if (!f) continue
+    f.products.forEach((p) => seen.add(p.id))
+    out.push(f)
+  }
+  return out
+}
