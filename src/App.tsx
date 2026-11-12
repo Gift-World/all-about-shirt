@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'motion/react'
 import Lenis from 'lenis'
@@ -15,6 +15,9 @@ import { Family } from './pages/Family'
 import { Match } from './pages/Match'
 import { Track } from './pages/Track'
 import { Stylist } from './components/Stylist'
+
+// the owner studio loads on its own, so shoppers never download it
+const Admin = lazy(() => import('./pages/Admin').then((m) => ({ default: m.Admin })))
 
 let lenis: Lenis | null = null
 
@@ -75,9 +78,17 @@ function Routed() {
   )
 }
 
-export default function App() {
+/** /admin is the owner studio: no shop header, footer, cursor or chat. */
+function Shell() {
+  const { pathname } = useLocation()
+  if (pathname.startsWith('/admin')) {
+    return (
+      <Suspense fallback={<div className="grid min-h-svh place-items-center bg-ink text-sm text-bone/60">Opening the studio…</div>}>
+        <Admin />
+      </Suspense>
+    )
+  }
   return (
-    <BrowserRouter>
       <div className="grain">
         <a href="#main" className="fixed top-2 left-2 z-[200] -translate-y-20 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-bone focus:translate-y-0">
           Skip to content
@@ -93,6 +104,13 @@ export default function App() {
         <Toast />
         <Stylist />
       </div>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Shell />
     </BrowserRouter>
   )
 }
