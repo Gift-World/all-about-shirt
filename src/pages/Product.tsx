@@ -9,6 +9,7 @@ import { NotFound } from './Misc'
 import { isSold, soldAgo, stock } from '../data/extras'
 import { ConditionReport, FitFinder, Measurements, Reviews } from '../components/Trust'
 import { EtaLine } from '../components/Eta'
+import { CommunitySection } from '../components/Community'
 
 const VIEW_LABELS = ['The piece', 'Detail', 'Fabric close up']
 
@@ -289,6 +290,8 @@ export function Product() {
         <Reveal><ConditionReport p={p} /></Reveal>
         <Reveal delay={0.08}><Measurements p={p} selected={size} /></Reveal>
       </section>
+
+      <CommunitySection p={p} />
 
       <Reviews p={p} />
 

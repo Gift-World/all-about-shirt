@@ -252,7 +252,7 @@ export function feed(prompt: string, n = 6): Frame[] {
         : look.length > 1
           ? `the ${look[0].name.toLowerCase()} with the ${look[1].name.toLowerCase()}, ${kes(total)} for the full look.`
           : `the ${look[0].name.toLowerCase()}, ${kes(total)}.`
-    const caption = `${lead} ${k === 0 ? body.charAt(0).toUpperCase() + body.slice(1) : body}${k === 0 && size ? ` Everything fits ${size}.` : ''}`.replace(/\s+/g, ' ').trim()
+    const caption = `${lead} ${k === 0 ? body.charAt(0).toUpperCase() + body.slice(1) : body}${k === 0 && size ? (size.startsWith('W') ? ` The ${look.length > 1 ? 'trousers fit' : 'waist is'} ${size}.` : ` Everything fits ${size}.`) : ''}`.replace(/\s+/g, ' ').trim()
     out.push({ id: `${prompt}-${k}`, prompt, caption, products: look, total, actions: r.actions })
   }
   return out
