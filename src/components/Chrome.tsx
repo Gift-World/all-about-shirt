@@ -13,8 +13,7 @@ import {
   Plus,
   Trash,
   WhatsappLogo,
-  X,
-} from '@phosphor-icons/react'
+  X, LockSimple } from '@phosphor-icons/react'
 import { branches, byId, delivery, kes, products, store, whatsapp, type Branch } from '../data/catalog'
 import { cartTotals, useShop, maxQty } from '../store/shop'
 import { U } from '../lib/img'
@@ -225,7 +224,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       animate={{ clipPath: 'inset(0 0 0% 0)' }}
       exit={{ clipPath: 'inset(0 0 100% 0)' }}
       transition={{ duration: 0.7, ease }}
-      className="fixed inset-0 z-[70] flex flex-col bg-ink px-6 pt-5 pb-8 text-bone"
+      className="fixed inset-0 z-[70] flex flex-col overflow-y-auto bg-ink px-6 pt-5 pb-8 text-bone"
+      data-lenis-prevent
       role="dialog"
       aria-modal
       aria-label="Menu"
@@ -236,7 +236,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           <X size={20} />
         </button>
       </div>
-      <ul className="mt-14 flex-1 space-y-2">
+      <ul className="mt-[min(3.5rem,5svh)] flex-1 space-y-[min(0.5rem,1svh)]">
         {links.map((l, i) => (
           <motion.li
             key={l.to}
@@ -244,14 +244,17 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.25 + i * 0.06, duration: 0.8, ease }}
           >
-            <Link to={l.to} onClick={onClose} className="display block text-6xl">
+            <Link to={l.to} onClick={onClose} className="display block text-[min(3.75rem,7.6svh)] leading-[1.05]">
               {l.label}
             </Link>
           </motion.li>
         ))}
       </ul>
-      <div className="flex items-center gap-3 text-sm text-bone/70">
-        <MapPin size={16} /> {store.shop}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-bone/70">
+        <span className="flex items-center gap-3"><MapPin size={16} /> {store.shop}</span>
+        <Link to="/admin" onClick={onClose} className="inline-flex items-center gap-1.5 rounded-full border border-bone/20 px-3 py-1.5 text-xs font-semibold hover:border-bone hover:text-bone">
+          <LockSimple size={13} /> Owner login
+        </Link>
       </div>
     </motion.div>
   )
@@ -640,10 +643,11 @@ export function Footer() {
             <a href={store.facebook} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-bone"><FacebookLogo size={16} /> AllaboutLinen</a>
             <a href={whatsapp()} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-bone"><WhatsappLogo size={16} /> WhatsApp</a>
           </div>
-          <div className="flex gap-4 md:justify-end">
+          <div className="flex flex-wrap gap-x-4 gap-y-2 md:justify-end">
             <Link to="/legal/privacy" className="hover:text-bone">Privacy</Link>
             <Link to="/legal/terms" className="hover:text-bone">Terms</Link>
             <Link to="/legal/returns" className="hover:text-bone">Returns</Link>
+            <Link to="/admin" className="inline-flex items-center gap-1 hover:text-bone"><LockSimple size={13} /> Owner login</Link>
           </div>
         </div>
       </div>
